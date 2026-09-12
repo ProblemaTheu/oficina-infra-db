@@ -46,7 +46,16 @@ Rodam no **boot da aplicação** (golang-migrate com advisory lock do PostgreSQL
 
 ## Deploy
 
-PR para `main` roda `fmt`, `validate`, `tfsec` e comenta o `plan`. Merge na `main` aplica.
+`.github/workflows/terraform.yml`:
+
+| Evento | Role OIDC | O que faz |
+|---|---|---|
+| PR para `homolog` ou `main` | `gha-oficina-infra-db-plan` (só leitura) | `fmt`, `validate`, `plan` comentado no PR — **nunca aplica** |
+| push na `main` / disparo manual | `gha-oficina-infra-db` | `plan` + `apply` do mesmo plan, no *environment* `prod` |
+
+A role de PR não consegue criar, alterar nem destruir nada. Ela lê o state — e o state guarda a senha do RDS, o que vale para qualquer desenho de plan em PR; o que a separação protege é a infraestrutura. Roles definidas em `oficina-infra-k8s/bootstrap`.
+
+`gitleaks` roda em todo evento. Sem `tfsec`/`checkov` (corte 15 do plano). A versão do Terraform do CI vem de `.terraform-version` e precisa ser a mesma da máquina que aplicou por último.
 
 > ⚠️ Antes de qualquer migration destrutiva em produção: `aws rds create-db-snapshot`.
 
